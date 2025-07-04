@@ -14,7 +14,7 @@ private_db_subnet_2_cidr  = "10.0.6.0/24"
 
 # ami               = "ami-0185600d76ba787f4" TF_VAR_AMI
 ec2_instance_type = "t3.micro"
-# key_name          = "ssh_key_aws"
+# key_name          = "oregon-keypair"
 #-------------RDS Variables Default Values-------------------#
 
 # db_name        = "my_first_db"
