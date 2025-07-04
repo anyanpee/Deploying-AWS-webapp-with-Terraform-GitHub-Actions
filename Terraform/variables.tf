@@ -46,7 +46,7 @@ variable "private_db_subnet_2_cidr" {
 
 variable "ami" {
   type    = string
-  default = "ami-0c55b159cbfafe1f0" # Amazon Linux 2 in us-west-2
+  default = "ami-05ee755be0cd7555c" # Amazon Linux 2 in us-west-2
 }
 
 variable "ec2_instance_type" {
