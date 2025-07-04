@@ -48,6 +48,9 @@ jobs:
         with:
           terraform_wrapper: false
 
+      - name: Debug AWS credentials
+        run: aws sts get-caller-identity
+
       - name: Terraform Init
         run: terraform init
         working-directory: ./Terraform
