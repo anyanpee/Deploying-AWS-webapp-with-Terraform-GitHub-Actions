@@ -1,4 +1,4 @@
-region = "eu-south-1"
+region = "us-west-2"
 
 #-------------Networking Variables Default Values-------------------#
 
