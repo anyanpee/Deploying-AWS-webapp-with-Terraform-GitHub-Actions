@@ -35,8 +35,11 @@ jobs:
       with:
         terraform_wrapper: false
 
-    - name: Login to Amazon ECR (private)
-      uses: aws-actions/amazon-ecr-login@v1
+     - name: Login to AWS ECR
+       if: env.TRIGGER == 'apply'
+       uses: aws-actions/amazon-ecr-login@v1
+       with:
+      region: us-west-2
 
     - name: Build and Push Docker Image to ECR
       if: env.TRIGGER == 'apply'
