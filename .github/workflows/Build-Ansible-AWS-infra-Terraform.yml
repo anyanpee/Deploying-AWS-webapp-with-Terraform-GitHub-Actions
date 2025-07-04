@@ -1,29 +1,96 @@
-name: Deploy with Terraform
+name: Build AWS Infrastructure and Deploy Dockerized Flask-App on it.
 
 on:
   workflow_dispatch:
     inputs:
-      TRIGGER:
-        description: 'Trigger type'
+      trigger:
+        description: "apply OR destroy"
         required: true
-        default: 'apply'
+        default: apply
+        type: choice
+        options:
+          - apply
+          - destroy
 
 env:
   AWS_REGION: us-west-2
-  TRIGGER: ${{ github.event.inputs.TRIGGER }}
+  TF_VAR_ami: ${{ secrets.TF_VAR_AMI }}
+  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  EC2_PRIVATE_SSH_KEY: ${{ secrets.AWS_EC2_SSH_PRIVATE_KEY }}
+  EC2_PUBLIC_SSH_KEY: ${{ secrets.AWS_SSH_PUBLIC_KEY }}
+  TRIGGER: '${{ inputs.trigger }}'
 
 jobs:
-  deploy:
+  build-aws-infra:
     runs-on: ubuntu-latest
+
+    outputs:
+      EC2_PRIVATE_IP: ${{ steps.get-private-ip.outputs.ec2_private_ip }}
+      BASTION_PUBLIC_IP: ${{ steps.get-public-ip.outputs.bastion_public_ip }}
 
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
 
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
       - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
+        uses: hashicorp/setup-terraform@v1
         with:
           terraform_wrapper: false
+
+      - name: Terraform Init
+        run: terraform init
+        working-directory: ./Terraform
+
+      - name: Terraform Format
+        run: |
+          terraform fmt -recursive
+          terraform fmt -check
+        working-directory: ./Terraform
+
+      - name: Terraform ${{ env.TRIGGER }}
+        id: apply-or-destroy
+        run: |
+          terraform $TRIGGER \
+            -var="public_key=$EC2_PUBLIC_SSH_KEY" \
+            -var="key_name=ssh_key_aws" \
+            -auto-approve
+        working-directory: ./Terraform
+
+      - name: Set Output 1
+        if: env.TRIGGER == 'apply'
+        id: get-private-ip
+        run: echo "ec2_private_ip=$(terraform output -raw application_private_ip_1)" >> $GITHUB_OUTPUT
+        working-directory: ./Terraform
+
+      - name: Set Output 2
+        if: env.TRIGGER == 'apply'
+        id: get-public-ip
+        run: echo "bastion_public_ip=$(terraform output -raw bastion_public_ip)" >> $GITHUB_OUTPUT
+        working-directory: ./Terraform
+
+  configure-aws-infra:
+    runs-on: ubuntu-latest
+    needs: build-aws-infra
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Set Private IP to Env Variables
+        if: env.TRIGGER == 'apply'
+        run: echo EC2_PRIVATE_IP=${{ needs.build-aws-infra.outputs.EC2_PRIVATE_IP }} >> $GITHUB_ENV
+
+      - name: Set Public IP to Env Variables
+        if: env.TRIGGER == 'apply'
+        run: echo BASTION_PUBLIC_IP=${{ needs.build-aws-infra.outputs.BASTION_PUBLIC_IP }} >> $GITHUB_ENV
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v2
@@ -36,28 +103,44 @@ jobs:
         if: env.TRIGGER == 'apply'
         uses: aws-actions/amazon-ecr-login@v1
 
-      - name: Set Environment Variables
+      - name: Build and Push Docker Image
         if: env.TRIGGER == 'apply'
+        env:
+          REPOSITORY: my-app
+          IMAGE_TAG: ${{ github.sha }}
         run: |
-          echo "ECR_REPOSITORY=my-app" >> $GITHUB_ENV
-          echo "IMAGE_TAG=${GITHUB_SHA}" >> $GITHUB_ENV
-          echo "REGISTRY=$(aws sts get-caller-identity --query 'Account' --output text).dkr.ecr.${AWS_REGION}.amazonaws.com" >> $GITHUB_ENV
+          docker build -t $REPOSITORY:$IMAGE_TAG ./Monty_Hall_Game_Flask_App
+          aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $(aws sts get-caller-identity --query 'Account' --output text).dkr.ecr.$AWS_REGION.amazonaws.com
+          docker tag $REPOSITORY:$IMAGE_TAG $(aws sts get-caller-identity --query 'Account' --output text).dkr.ecr.$AWS_REGION.amazonaws.com/$REPOSITORY:$IMAGE_TAG
+          docker push $(aws sts get-caller-identity --query 'Account' --output text).dkr.ecr.$AWS_REGION.amazonaws.com/$REPOSITORY:$IMAGE_TAG
 
-      - name: Build and Push Docker Image to ECR
+      - name: SSH into EC2 & Deploy Docker App
         if: env.TRIGGER == 'apply'
-        run: |
-          docker build -t $REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG ./Monty_Hall_Game_Flask_App
-          docker push $REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ env.EC2_PRIVATE_IP }}
+          username: ec2-user
+          key: ${{ env.EC2_PRIVATE_SSH_KEY }}
+          proxy_host: ${{ env.BASTION_PUBLIC_IP }}
+          proxy_username: ec2-user
+          proxy_key: ${{ env.EC2_PRIVATE_SSH_KEY }}
+          envs: AWS_REGION
+          script: |
+            sudo yum update -y
+            sudo amazon-linux-extras install docker -y
+            sudo service docker start
+            sudo docker pull $(aws sts get-caller-identity --query 'Account' --output text).dkr.ecr.$AWS_REGION.amazonaws.com/my-app:$IMAGE_TAG
+            sudo docker run -d --name flask-app -p 80:5000 $(aws sts get-caller-identity --query 'Account' --output text).dkr.ecr.$AWS_REGION.amazonaws.com/my-app:$IMAGE_TAG
 
       - name: Terraform Init
         run: terraform init
         working-directory: ./Terraform
 
-      - name: Terraform Format Check
-        run: terraform fmt -check -recursive
-        working-directory: ./Terraform
-
-      - name: Terraform Apply
+      - name: Terraform Destroy Bastion Host
         if: env.TRIGGER == 'apply'
-        run: terraform apply -auto-approve
+        run: |
+          terraform destroy -target="aws_instance.bastion_instance_1" \
+            -var="public_key=$EC2_PUBLIC_SSH_KEY" \
+            -var="key_name=ssh_key_aws" \
+            -auto-approve
         working-directory: ./Terraform
