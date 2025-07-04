@@ -56,13 +56,13 @@ variable "ec2_instance_type" {
 
 variable "key_name" {
   type    = string
-  default = "ssh_key-aws" # Replace with your EC2 key pair
+  default = "ssh_key_aws" # Replace with your EC2 key pair
 }
 
 variable "public_key" {
   type      = string
   sensitive = true
-  default   = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQC59SftnyAwI5+GzAT1cHzXTAxmGB0hxQ3WsjoCWER5jDoIxCicpJPpQLLY3cAtrop8xFlbU4BN6TbxU7uxb7QKYn7W3dHeAd4TW6u9+UAolCw5wS38RSPLBR9SChLmYlZqzHPI8ec4S2a2HPdr+k6QPxnI7TTyn4UWzI+SEgGdvmISOvYj653KNKLLIub1yWOiwkwtXHyMotpMGeENtlVtG/YRIh8dOeXQuV4L1rBapL+gcpdovXrSirdnxACdwO37i6hydV/2mVM+96xkKVeLWAaZWtyGZLUUAEeXWiUzsCqvZtcQobVydoC9KRt0iiViNssmK7bikNe8ET89UStmFhpESRm7v8XdZeQ5VaY0t9J47DweaRdYLpbKFfrDj4W9YIF+IvD0rcwvd2UI3n3nUtjmQTZCefQ+UUXQMwbSvt/C0rS4ufjpsivOKXQrDTsJdcYboaNLQtsjYkQWYw17LUJKqERs1OW4Ok1fIt8HJg/Duuoyrda8I0xx0+RlaXiSFhfZYAlZWeOk5FIxQw3jvaTVPcLTSlUG4r3VnRCsoSp2wlM2ZABUy+NpnLZMtdh9HuqR7ER3G7EjSkBlb9hwtleT+D1S9ShKt3tIm1cwHds9fptzbH+ULo5Poqt/m5BdJanFB19I7C8/+rRy9kc41zLW2tSEAGsfgqPMr7tjSQ== slimp@Anyanpee" # Replace with your actual public key
+  default   = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDTZHcbmECzpueBcSj95skeSqEK57wwp+gRwEzaqK9hkvfAlUIVy5VJgWqVLKwzb9/UJIB2JAT+88229txelsYRDV5+aNgjtWSpsPUvpZEdJcbL7P4LQagwezkGqZn8yzfz9UmITpqGJtOfaIVGQu5HvvnGxYXIT41qlIVyzuCuKXwDO44ZySx9SYTXXuZvdI3wKK2PQ9wccDNUe8IHJVu72e/mUMB3pqC+JFQyZexOYiXrsqWBnueFN5BHPZdORSVpTgPQuH+yEQGGzsr3/2+fV56z37ufhdDn+JwnT7Pp8a53onQ25FHVutI4If0tpw4QYK5M/7mkuPHkMbPS88XBgdy1Gi5LcPl0VS2xwbc6EccbQRo10ip+fAIcfXqSnqKOCUbd6Af/MendNJe+Z2zmrcAiKogYSe8C+CHwuxR4Pam0SGm8z/uzGkTlGfdbtzA5YIx3Z13XumgPXJrsq9Yt8ZVE3b5R40UHEsMpV+S+10u1P8AOZSg3XQEP42FeQRrq2dcB6ejeiQQiCVm92gvS6zO5+vCg5xo+bKXO7yg/uHwJAB36yNuy7u4fYV2IqljsH7Zr4a6K+qumwLL4RijTrOH7/NMIItBA0B8sOkRcyhPiRdOtg73Kpp6deqGo5hQ7FZhvUU5LLDIQYAQTKdH+N8F5qCohNPKAhpyy2Q2qOQ==" 
 }
 
 #---------------- Database Variables (optional) ---------------------
