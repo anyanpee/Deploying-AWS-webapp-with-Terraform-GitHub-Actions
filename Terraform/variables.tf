@@ -56,7 +56,7 @@ variable "ec2_instance_type" {
 
 variable "key_name" {
   type    = string
-  default = "oregon-keypair" # Replace with your EC2 key pair
+  default = "ssh_key-aws" # Replace with your EC2 key pair
 }
 
 variable "public_key" {
