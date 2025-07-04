@@ -62,7 +62,7 @@ variable "key_name" {
 variable "public_key" {
   type      = string
   sensitive = true
-  default   = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDTZHcbmECzpueBcSj95skeSqEK57wwp+gRwEzaqK9hkvfAlUIVy5VJgWqVLKwzb9/UJIB2JAT+88229txelsYRDV5+aNgjtWSpsPUvpZEdJcbL7P4LQagwezkGqZn8yzfz9UmITpqGJtOfaIVGQu5HvvnGxYXIT41qlIVyzuCuKXwDO44ZySx9SYTXXuZvdI3wKK2PQ9wccDNUe8IHJVu72e/mUMB3pqC+JFQyZexOYiXrsqWBnueFN5BHPZdORSVpTgPQuH+yEQGGzsr3/2+fV56z37ufhdDn+JwnT7Pp8a53onQ25FHVutI4If0tpw4QYK5M/7mkuPHkMbPS88XBgdy1Gi5LcPl0VS2xwbc6EccbQRo10ip+fAIcfXqSnqKOCUbd6Af/MendNJe+Z2zmrcAiKogYSe8C+CHwuxR4Pam0SGm8z/uzGkTlGfdbtzA5YIx3Z13XumgPXJrsq9Yt8ZVE3b5R40UHEsMpV+S+10u1P8AOZSg3XQEP42FeQRrq2dcB6ejeiQQiCVm92gvS6zO5+vCg5xo+bKXO7yg/uHwJAB36yNuy7u4fYV2IqljsH7Zr4a6K+qumwLL4RijTrOH7/NMIItBA0B8sOkRcyhPiRdOtg73Kpp6deqGo5hQ7FZhvUU5LLDIQYAQTKdH+N8F5qCohNPKAhpyy2Q2qOQ==" 
+  default   = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDTZHcbmECzpueBcSj95skeSqEK57wwp+gRwEzaqK9hkvfAlUIVy5VJgWqVLKwzb9/UJIB2JAT+88229txelsYRDV5+aNgjtWSpsPUvpZEdJcbL7P4LQagwezkGqZn8yzfz9UmITpqGJtOfaIVGQu5HvvnGxYXIT41qlIVyzuCuKXwDO44ZySx9SYTXXuZvdI3wKK2PQ9wccDNUe8IHJVu72e/mUMB3pqC+JFQyZexOYiXrsqWBnueFN5BHPZdORSVpTgPQuH+yEQGGzsr3/2+fV56z37ufhdDn+JwnT7Pp8a53onQ25FHVutI4If0tpw4QYK5M/7mkuPHkMbPS88XBgdy1Gi5LcPl0VS2xwbc6EccbQRo10ip+fAIcfXqSnqKOCUbd6Af/MendNJe+Z2zmrcAiKogYSe8C+CHwuxR4Pam0SGm8z/uzGkTlGfdbtzA5YIx3Z13XumgPXJrsq9Yt8ZVE3b5R40UHEsMpV+S+10u1P8AOZSg3XQEP42FeQRrq2dcB6ejeiQQiCVm92gvS6zO5+vCg5xo+bKXO7yg/uHwJAB36yNuy7u4fYV2IqljsH7Zr4a6K+qumwLL4RijTrOH7/NMIItBA0B8sOkRcyhPiRdOtg73Kpp6deqGo5hQ7FZhvUU5LLDIQYAQTKdH+N8F5qCohNPKAhpyy2Q2qOQ== slimp@Anyanpee" 
 }
 
 #---------------- Database Variables (optional) ---------------------
