@@ -5,8 +5,8 @@ on:
     branches:
       - main
     paths:
-      - 'infra/'
-  workflow_dispatch:   # 👈 this line enables manual run button
+      - 'Terraform/'          # Make sure this matches your actual directory
+  workflow_dispatch:            # Enables "Run workflow" button in GitHub UI
 
 env:
   AWS_REGION: us-east-1
@@ -36,16 +36,22 @@ jobs:
         terraform_version: 1.6.0
 
     - name: Terraform Init
-      run: terraform -chdir=$TF_WORK_DIR init
+      run: |
+        cd $TF_WORK_DIR
+        terraform init
 
     - name: Terraform Apply
-      run: terraform -chdir=$TF_WORK_DIR apply -auto-approve
+      run: |
+        cd $TF_WORK_DIR
+        terraform apply -auto-approve
 
     - name: Extract EC2 Private IP
       id: get_ip
       run: |
-        PRIVATE_IP=$(terraform -chdir=$TF_WORK_DIR output -raw application_private_ip_1)
+        cd $TF_WORK_DIR
+        PRIVATE_IP=$(terraform output application_private_ip_1 | tr -d '"')
         echo "EC2_PRIVATE_IP=$PRIVATE_IP" >> $GITHUB_ENV
+        echo "Extracted IP: $PRIVATE_IP"
 
     - name: Login to Amazon ECR
       id: login-ecr
@@ -68,6 +74,9 @@ jobs:
         username: ec2-user
         key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
         script: |
-          sudo yum install -y ansible
+          sudo yum install -y python3-pip
+          pip3 install ansible
+          mkdir -p /home/ec2-user/your-app-folder
           cd /home/ec2-user/your-app-folder
+          # Assuming deploy.yml is already present or fetched in the instance
           ansible-playbook deploy.yml
