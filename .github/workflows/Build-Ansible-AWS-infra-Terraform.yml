@@ -1,4 +1,4 @@
-name: Build AWS Infrastructure and Deploy Dockerized Flask-App on it.
+name: Build AWS infrastructure and deploy Dockerized Flask app
 
 on:
   workflow_dispatch:
@@ -8,139 +8,108 @@ on:
         required: true
         default: apply
         type: choice
-        options:
-          - apply
-          - destroy
+        options: [apply, destroy]
 
 env:
   AWS_REGION: us-west-2
-  TF_VAR_ami: ${{ secrets.TF_VAR_AMI }}
-  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  TF_VAR_ami: ${{ secrets.TF_VAR_AMI }}              # Amazon Linux 2 AMI
   TRIGGER: '${{ inputs.trigger }}'
 
 jobs:
+# ──────────────────────────────────────────────────────────
   build-aws-infra:
     runs-on: ubuntu-latest
 
     outputs:
-      EC2_PRIVATE_IP: ${{ steps.get-private-ip.outputs.ec2_private_ip }}
-      BASTION_PUBLIC_IP: ${{ steps.get-public-ip.outputs.bastion_public_ip }}
+      EC2_PRIVATE_IP:  ${{ steps.get-private-ip.outputs.app_ip }}
+      BASTION_PUBLIC_IP: ${{ steps.get-bastion-ip.outputs.bastion_ip }}
 
     steps:
-      - name: Checkout Code
+      - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Configure AWS Credentials
+      - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
+          aws-region:            ${{ env.AWS_REGION }}
 
-      - name: Verify AWS Credentials
-        run: aws sts get-caller-identity
-
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v1
-        with:
-          terraform_wrapper: false
-
-      - name: Terraform Init
-        run: terraform init
+      - name: Terraform init / fmt / ${{ env.TRIGGER }}
         working-directory: ./Terraform
-
-      - name: Terraform Format
         run: |
+          terraform init
           terraform fmt -recursive
           terraform fmt -check
-        working-directory: ./Terraform
-
-      - name: Terraform ${{ env.TRIGGER }}
-        id: apply-or-destroy
-        run: |
           terraform $TRIGGER \
             -var="public_key=${{ secrets.AWS_SSH_PUBLIC_KEY }}" \
             -var="key_name=ssh_key_aws" \
             -auto-approve
-        working-directory: ./Terraform
 
-      - name: Set Output 1 - Private IP
+      - name: Capture application private IP
         if: env.TRIGGER == 'apply'
         id: get-private-ip
-        run: echo "ec2_private_ip=$(terraform output -raw application_private_ip_1)" >> $GITHUB_OUTPUT
         working-directory: ./Terraform
+        run: echo "app_ip=$(terraform output -raw application_private_ip_1)" >> $GITHUB_OUTPUT
 
-      - name: Set Output 2 - Bastion Public IP
+      - name: Capture bastion public IP
         if: env.TRIGGER == 'apply'
-        id: get-public-ip
-        run: echo "bastion_public_ip=$(terraform output -raw bastion_public_ip)" >> $GITHUB_OUTPUT
+        id: get-bastion-ip
         working-directory: ./Terraform
-
-  configure-aws-infra:
+        run: echo "bastion_ip=$(terraform output -raw bastion_public_ip)" >> $GITHUB_OUTPUT
+# ──────────────────────────────────────────────────────────
+  deploy:
     runs-on: ubuntu-latest
     needs: build-aws-infra
 
+    if: env.TRIGGER == 'apply'
+
+    env:
+      EC2_PRIVATE_IP:   ${{ needs.build-aws-infra.outputs.EC2_PRIVATE_IP }}
+      BASTION_PUBLIC_IP:${{ needs.build-aws-infra.outputs.BASTION_PUBLIC_IP }}
+
     steps:
-      - name: Checkout Code
+      - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Set Private IP to Env Variables
-        if: env.TRIGGER == 'apply'
-        run: echo EC2_PRIVATE_IP=${{ needs.build-aws-infra.outputs.EC2_PRIVATE_IP }} >> $GITHUB_ENV
-
-      - name: Set Public IP to Env Variables
-        if: env.TRIGGER == 'apply'
-        run: echo BASTION_PUBLIC_IP=${{ needs.build-aws-infra.outputs.BASTION_PUBLIC_IP }} >> $GITHUB_ENV
-
-      - name: Configure AWS Credentials
+      - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
+          aws-region:            ${{ env.AWS_REGION }}
 
-      - name: Login to AWS ECR
-        if: env.TRIGGER == 'apply'
+      - name: Login to ECR
         uses: aws-actions/amazon-ecr-login@v1
 
-      - name: Build and Push Docker Image to ECR
-        if: env.TRIGGER == 'apply'
+      - name: Build & push Docker image
         env:
-          REPOSITORY: my-app
-          IMAGE_TAG: ${{ github.sha }}
+          REPO: my-app
+          TAG:  ${{ github.sha }}
         run: |
-          docker build -t $REPOSITORY:$IMAGE_TAG ./Monty_Hall_Game_Flask_App
-          aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $(aws sts get-caller-identity --query 'Account' --output text).dkr.ecr.$AWS_REGION.amazonaws.com
-          docker tag $REPOSITORY:$IMAGE_TAG $(aws sts get-caller-identity --query 'Account' --output text).dkr.ecr.$AWS_REGION.amazonaws.com/$REPOSITORY:$IMAGE_TAG
-          docker push $(aws sts get-caller-identity --query 'Account' --output text).dkr.ecr.$AWS_REGION.amazonaws.com/$REPOSITORY:$IMAGE_TAG
+          ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+          URI="$ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$REPO:$TAG"
+          docker build -t $URI ./Monty_Hall_Game_Flask_App
+          docker push $URI
+          echo "IMAGE_URI=$URI" >> $GITHUB_ENV   # expose to next step
 
-      - name: SSH into EC2 & Deploy Docker App
-        if: env.TRIGGER == 'apply'
+      - name: SSH into EC2 and run container
         uses: appleboy/ssh-action@master
         with:
           host: ${{ env.EC2_PRIVATE_IP }}
-          username: ec2-user
+          username: ec2-user                     # keep “ubuntu” if you switched AMI
           key: ${{ secrets.AWS_EC2_SSH_PRIVATE_KEY }}
           proxy_host: ${{ env.BASTION_PUBLIC_IP }}
           proxy_username: ec2-user
           proxy_key: ${{ secrets.AWS_EC2_SSH_PRIVATE_KEY }}
           script: |
             sudo yum update -y
-            sudo amazon-linux-extras install docker -y
-            sudo service docker start
-            sudo docker pull $(aws sts get-caller-identity --query 'Account' --output text).dkr.ecr.$AWS_REGION.amazonaws.com/my-app:$IMAGE_TAG
-            sudo docker run -d --name flask-app -p 80:5000 $(aws sts get-caller-identity --query 'Account' --output text).dkr.ecr.$AWS_REGION.amazonaws.com/my-app:$IMAGE_TAG
-
-      - name: Terraform Init (optional before destroy)
-        run: terraform init
-        working-directory: ./Terraform
-
-      - name: Terraform Destroy Bastion Host
-        if: env.TRIGGER == 'apply'
-        run: |
-          terraform destroy -target="aws_instance.bastion_instance_1" \
-            -var="public_key=${{ secrets.AWS_SSH_PUBLIC_KEY }}" \
-            -var="key_name=ssh_key_aws" \
-            -auto-approve
-        working-directory: ./Terraform
+            sudo yum install -y docker
+            sudo systemctl start docker
+            echo "Logging in to ECR ..."
+            aws ecr get-login-password --region $AWS_REGION \
+              | sudo docker login --username AWS --password-stdin $(echo $IMAGE_URI | cut -d/ -f1)
+            echo "Pulling image $IMAGE_URI"
+            sudo docker pull $IMAGE_URI
+            echo "Running container..."
+            sudo docker run -d --name flask-app -p 80:5000 $IMAGE_URI
