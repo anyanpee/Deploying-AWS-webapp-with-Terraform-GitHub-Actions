@@ -5,11 +5,12 @@ on:
     branches:
       - main
     paths:
-      - 'infra/'        # only run when files in the 'infra/' folder are changed
+      - 'infra/'
+  workflow_dispatch:   # 👈 this line enables manual run button
 
 env:
   AWS_REGION: us-east-1
-  ECR_REPOSITORY: your-ecr-repo-name   # <-- change to your real repo name
+  ECR_REPOSITORY: your-ecr-repo-name
   TF_WORK_DIR: infra
   TRIGGER: apply
 
