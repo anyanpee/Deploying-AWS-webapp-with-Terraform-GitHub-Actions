@@ -9,7 +9,7 @@ on:
   workflow_dispatch:            # Enables "Run workflow" button in GitHub UI
 
 env:
-  AWS_REGION: us-east-1
+  AWS_REGION: us-west-2
   ECR_REPOSITORY: my-app
   TF_WORK_DIR: Terraform
   TRIGGER: apply
