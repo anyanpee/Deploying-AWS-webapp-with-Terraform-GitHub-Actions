@@ -44,7 +44,7 @@ jobs:
     - name: Extract EC2 Private IP
       id: get_ip
       run: |
-        PRIVATE_IP=$(terraform -chdir=$TF_WORK_DIR output -raw ec2_private_ip)
+        PRIVATE_IP=$(terraform -chdir=$TF_WORK_DIR output -raw application_private_ip_1)
         echo "EC2_PRIVATE_IP=$PRIVATE_IP" >> $GITHUB_ENV
 
     - name: Login to Amazon ECR
