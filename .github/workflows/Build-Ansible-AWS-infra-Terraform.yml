@@ -1,115 +1,69 @@
-name: Build AWS infrastructure and deploy Dockerized Flask app
+name: Build-Ansible-AWS-infra-Terraform
 
 on:
-  workflow_dispatch:
-    inputs:
-      trigger:
-        description: "apply OR destroy"
-        required: true
-        default: apply
-        type: choice
-        options: [apply, destroy]
+  push:
+    branches:
+      - main
 
 env:
-  AWS_REGION: us-west-2
-  TF_VAR_ami: ${{ secrets.TF_VAR_AMI }}              # Amazon Linux 2 AMI
-  TRIGGER: '${{ inputs.trigger }}'
+  AWS_REGION: us-east-1
+  ECR_REPOSITORY: your-ecr-repo-name
+  TRIGGER: apply
 
 jobs:
-# ──────────────────────────────────────────────────────────
-  build-aws-infra:
+  build:
+    name: Terraform + Ansible Deployment
     runs-on: ubuntu-latest
 
-    outputs:
-      EC2_PRIVATE_IP:  ${{ steps.get-private-ip.outputs.app_ip }}
-      BASTION_PUBLIC_IP: ${{ steps.get-bastion-ip.outputs.bastion_ip }}
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+    - name: Checkout code
+      uses: actions/checkout@v3
 
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v2
-        with:
-          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region:            ${{ env.AWS_REGION }}
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v2
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
 
-      - name: Terraform init / fmt / ${{ env.TRIGGER }}
-        working-directory: ./Terraform
-        run: |
-          terraform init
-          terraform fmt -recursive
-          terraform fmt -check
-          terraform $TRIGGER \
-            -var="public_key=${{ secrets.AWS_SSH_PUBLIC_KEY }}" \
-            -var="key_name=ssh_key_aws" \
-            -auto-approve
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v2
+      with:
+        terraform_version: 1.6.0
 
-      - name: Capture application private IP
-        if: env.TRIGGER == 'apply'
-        id: get-private-ip
-        working-directory: ./Terraform
-        run: echo "app_ip=$(terraform output -raw application_private_ip_1)" >> $GITHUB_OUTPUT
+    - name: Terraform Init
+      run: terraform init
 
-      - name: Capture bastion public IP
-        if: env.TRIGGER == 'apply'
-        id: get-bastion-ip
-        working-directory: ./Terraform
-        run: echo "bastion_ip=$(terraform output -raw bastion_public_ip)" >> $GITHUB_OUTPUT
-# ──────────────────────────────────────────────────────────
-  deploy:
-    runs-on: ubuntu-latest
-    needs: build-aws-infra
+    - name: Terraform Apply
+      run: terraform apply -auto-approve
 
-    if: env.TRIGGER == 'apply'
+    - name: Extract EC2 Private IP
+      id: get_ip
+      run: |
+        PRIVATE_IP=$(terraform output -raw ec2_private_ip)
+        echo "EC2_PRIVATE_IP=$PRIVATE_IP" >> $GITHUB_ENV
 
-    env:
-      EC2_PRIVATE_IP:   ${{ needs.build-aws-infra.outputs.EC2_PRIVATE_IP }}
-      BASTION_PUBLIC_IP:${{ needs.build-aws-infra.outputs.BASTION_PUBLIC_IP }}
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v1
 
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+    - name: Build Docker image
+      run: |
+        docker build -t $ECR_REPOSITORY:latest .
+        docker tag $ECR_REPOSITORY:latest ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:latest
 
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v2
-        with:
-          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region:            ${{ env.AWS_REGION }}
+    - name: Push Docker image to ECR
+      run: |
+        docker push ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:latest
 
-      - name: Login to ECR
-        uses: aws-actions/amazon-ecr-login@v1
-
-      - name: Build & push Docker image
-        env:
-          REPO: my-app
-          TAG:  ${{ github.sha }}
-        run: |
-          ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
-          URI="$ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$REPO:$TAG"
-          docker build -t $URI ./Monty_Hall_Game_Flask_App
-          docker push $URI
-          echo "IMAGE_URI=$URI" >> $GITHUB_ENV   # expose to next step
-
-      - name: SSH into EC2 and run container
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ env.EC2_PRIVATE_IP }}
-          username: ec2-user                     # keep “ubuntu” if you switched AMI
-          key: ${{ secrets.AWS_EC2_SSH_PRIVATE_KEY }}
-          proxy_host: ${{ env.BASTION_PUBLIC_IP }}
-          proxy_username: ec2-user
-          proxy_key: ${{ secrets.AWS_EC2_SSH_PRIVATE_KEY }}
-          script: |
-            sudo yum update -y
-            sudo yum install -y docker
-            sudo systemctl start docker
-            echo "Logging in to ECR ..."
-            aws ecr get-login-password --region $AWS_REGION \
-              | sudo docker login --username AWS --password-stdin $(echo $IMAGE_URI | cut -d/ -f1)
-            echo "Pulling image $IMAGE_URI"
-            sudo docker pull $IMAGE_URI
-            echo "Running container..."
-            sudo docker run -d --name flask-app -p 80:5000 $IMAGE_URI
+    - name: SSH into EC2 & Run Ansible
+      if: env.TRIGGER == 'apply'
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ env.EC2_PRIVATE_IP }}
+        username: ec2-user
+        key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
+        script: |
+          sudo yum install -y ansible
+          cd /home/ec2-user/your-project
+          ansible-playbook deploy.yml
