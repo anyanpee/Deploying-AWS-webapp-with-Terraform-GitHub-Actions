@@ -68,17 +68,11 @@ jobs:
       run: |
         docker push ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:latest
 
-    - name: SSH into EC2 & Deploy with Ansible
+    - name: Debug SSH Connection Only
       if: env.TRIGGER == 'apply'
       uses: appleboy/ssh-action@master
       with:
         host: ${{ env.EC2_PRIVATE_IP }}
         username: ec2-user
         key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
-        script: |
-          sudo yum install -y python3-pip
-          pip3 install ansible
-          mkdir -p /home/ec2-user/your-app-folder
-          cd /home/ec2-user/your-app-folder
-          # Assuming deploy.yml is already present or fetched in the instance
-          ansible-playbook deploy.yml
+        script: echo "✅ SSH connection established"
