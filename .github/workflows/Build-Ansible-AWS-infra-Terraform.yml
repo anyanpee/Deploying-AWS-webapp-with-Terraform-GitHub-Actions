@@ -68,6 +68,9 @@ jobs:
       run: |
         docker push ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:latest
 
+    - name: Show secret length (safe)
+      run: echo "Key length = ${{ secrets.EC2_SSH_PRIVATE_KEY != '' && 'non-empty' || 'EMPTY' }}" 
+  
     - name: Debug SSH Connection Only
       if: env.TRIGGER == 'apply'
       uses: appleboy/ssh-action@master
