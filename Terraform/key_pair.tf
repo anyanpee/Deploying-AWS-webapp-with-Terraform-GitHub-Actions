@@ -3,7 +3,7 @@
 
 resource "aws_key_pair" "deployer" {
   key_name   = "devops_key_pair"
-  public_key = file("~/.ssh/devops_key_pair.pub")
+  public_key = file("${path.module}/devops_key_pair.pub")
 }
 
 # ssh-keygen # name = ssh_key_aws
