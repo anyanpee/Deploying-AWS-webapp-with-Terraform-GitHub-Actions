@@ -46,7 +46,7 @@ variable "private_db_subnet_2_cidr" {
 
 variable "ami" {
   type    = string
-  default = "ami-05ee755be0cd7555c" # Amazon Linux 2 in us-west-2
+  default = "ami-040361ed8686a66a2" # Amazon Linux 2 in us-west-2
 }
 
 variable "ec2_instance_type" {
@@ -56,7 +56,7 @@ variable "ec2_instance_type" {
 
 variable "key_name" {
   type    = string
-  default = "ssh_key_aws" # Replace with your EC2 key pair
+  default = "aws_key_pair.deployer.key_name" # Replace with your EC2 key pair
 }
 
 variable "public_key" {
