@@ -1,22 +1,25 @@
-name: Build-Ansible-AWS-infra-Terraform
+name: Deploy AWS Infra with Terraform & Ansible
 
 on:
   push:
     branches:
       - main
+    paths:
+      - 'infra/'        # only run when files in the 'infra/' folder are changed
 
 env:
   AWS_REGION: us-east-1
-  ECR_REPOSITORY: your-ecr-repo-name
+  ECR_REPOSITORY: your-ecr-repo-name   # <-- change to your real repo name
+  TF_WORK_DIR: infra
   TRIGGER: apply
 
 jobs:
-  build:
-    name: Terraform + Ansible Deployment
+  deploy:
+    name: Terraform + Docker + Ansible Deployment
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
+    - name: Checkout repository
       uses: actions/checkout@v3
 
     - name: Configure AWS credentials
@@ -32,15 +35,15 @@ jobs:
         terraform_version: 1.6.0
 
     - name: Terraform Init
-      run: terraform init
+      run: terraform -chdir=$TF_WORK_DIR init
 
     - name: Terraform Apply
-      run: terraform apply -auto-approve
+      run: terraform -chdir=$TF_WORK_DIR apply -auto-approve
 
     - name: Extract EC2 Private IP
       id: get_ip
       run: |
-        PRIVATE_IP=$(terraform output -raw ec2_private_ip)
+        PRIVATE_IP=$(terraform -chdir=$TF_WORK_DIR output -raw ec2_private_ip)
         echo "EC2_PRIVATE_IP=$PRIVATE_IP" >> $GITHUB_ENV
 
     - name: Login to Amazon ECR
@@ -56,7 +59,7 @@ jobs:
       run: |
         docker push ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:latest
 
-    - name: SSH into EC2 & Run Ansible
+    - name: SSH into EC2 & Deploy with Ansible
       if: env.TRIGGER == 'apply'
       uses: appleboy/ssh-action@master
       with:
@@ -65,5 +68,5 @@ jobs:
         key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
         script: |
           sudo yum install -y ansible
-          cd /home/ec2-user/your-project
+          cd /home/ec2-user/your-app-folder
           ansible-playbook deploy.yml
