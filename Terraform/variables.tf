@@ -56,7 +56,7 @@ variable "ec2_instance_type" {
 
 variable "key_name" {
   type    = string
-  default = "ssh_key_aws" # Replace with your EC2 key pair
+  default = "aws_key_pair.deployer.key_name" # Replace with your EC2 key pair
 }
 
 variable "public_key" {
