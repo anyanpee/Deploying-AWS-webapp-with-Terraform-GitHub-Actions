@@ -14,7 +14,7 @@ private_db_subnet_2_cidr  = "10.0.6.0/24"
 
 # ami               = "ami-040361ed8686a66a2" TF_VAR_AMI
 ec2_instance_type = "t3.micro"
-# key_name          = "ssh_key-aws"
+# key_name          = "aws_key_pair.deployer.key_name"
 #-------------RDS Variables Default Values-------------------#
 
 # db_name        = "my_first_db"
