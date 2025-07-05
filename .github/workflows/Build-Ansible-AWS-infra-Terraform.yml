@@ -48,10 +48,11 @@ jobs:
     - name: Extract EC2 Private IP
       id: get_ip
       run: |
-        cd $TF_WORK_DIR
-        PRIVATE_IP=$(terraform output application_private_ip_1 | tr -d '"')
-        echo "EC2_PRIVATE_IP=$PRIVATE_IP" >> $GITHUB_ENV
-        echo "Extracted IP: $PRIVATE_IP"
+       cd $TF_WORK_DIR
+       PRIVATE_IP=$(terraform output -raw application_private_ip_1 2>/dev/null || terraform output application_private_ip_1 | tr -d '"')
+       PRIVATE_IP=$(echo "$PRIVATE_IP" | tr -d '\r\n ')
+       echo "EC2_PRIVATE_IP=$PRIVATE_IP" >> $GITHUB_ENV
+       echo "Extracted EC2_PRIVATE_IP: $PRIVATE_IP"
 
     - name: Login to Amazon ECR
       id: login-ecr
