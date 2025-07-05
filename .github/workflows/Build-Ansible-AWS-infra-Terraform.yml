@@ -44,11 +44,16 @@ jobs:
     - name: Terraform Apply
       run: terraform -chdir=$TF_WORK_DIR apply -auto-approve
 
-    - name: Extract EC2 Private IP
+    - name: Extract EC2 IP for SSH
       id: get_ip
       run: |
-       PRIVATE_IP=$(terraform -chdir=$TF_WORK_DIR output -raw application_private_ip_1)
-       echo "EC2_PRIVATE_IP=$PRIVATE_IP" >> $GITHUB_ENV
+        # pull a single value, silently; fall back if -raw is blocked by "sensitive"
+        IP=$(terraform -chdir=$TF_WORK_DIR output -raw bastion_public_ip 2>/dev/null \
+            || terraform -chdir=$TF_WORK_DIR output bastion_public_ip | tr -d '"')
+        # keep ONLY digits, dots and colons
+        IP=$(echo "$IP" | tr -cd '0-9.:')
+        echo "EC2_PRIVATE_IP=$IP" >> "$GITHUB_ENV"
+        echo "Extracted IP = $IP"
        
     - name: Login to Amazon ECR
       id: login-ecr
