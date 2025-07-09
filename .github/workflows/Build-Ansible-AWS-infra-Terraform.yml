@@ -70,7 +70,16 @@ jobs:
 
     - name: Show secret length (safe)
       run: echo "Key length = ${{ secrets.EC2_SSH_PRIVATE_KEY != '' && 'non-empty' || 'EMPTY' }}" 
-  
+
+    - name: Validate SSH Key Secret Length
+      run: |
+        if [ -z "${{ secrets.EC2_SSH_PRIVATE_KEY }}" ]; then
+          echo "❌ SSH private key is empty!"
+          exit 1
+        else
+          echo "✅ SSH private key is set and loaded."
+        fi
+
     - name: Debug SSH Connection Only
       if: env.TRIGGER == 'apply'
       uses: appleboy/ssh-action@master
