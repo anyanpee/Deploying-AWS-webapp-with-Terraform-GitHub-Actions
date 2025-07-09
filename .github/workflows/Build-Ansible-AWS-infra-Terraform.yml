@@ -75,7 +75,7 @@ jobs:
       if: env.TRIGGER == 'apply'
       uses: appleboy/ssh-action@master
       with:
-        host: ${{ env.EC2_PRIVATE_IP }}
+        host: 54.245.8.248
         username: ec2-user
         key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
         script: echo "✅ SSH connection established"
