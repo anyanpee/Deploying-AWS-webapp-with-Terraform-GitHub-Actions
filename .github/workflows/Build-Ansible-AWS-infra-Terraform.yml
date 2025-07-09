@@ -78,9 +78,10 @@ jobs:
         host: 54.245.8.248
         username: ec2-user
         key: |
-      -----BEGIN OPENSSH PRIVATE KEY-----
-      b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAACFwAAAAdzc2gtcn
-      NhAAAAAwEAAQAAAgEAr7HuSyS407imFJzyNeTXlBqzj6ABwBQyUWfvJjbKtgpZkwmwbGs1
-      (⬅️ the full key continues here)
-      -----END OPENSSH PRIVATE KEY-----
-       script: echo "✅ SSH connection established"
+          -----BEGIN OPENSSH PRIVATE KEY-----
+          b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAACFwAAAAdzc2gtcn
+          NhAAAAAwEAAQAAAgEAr7HuSyS407imFJzyNeTXlBqzj6ABwBQyUWfvJjbKtgpZkwmwbGs1
+          ... (rest of your key, all lines indented 10 spaces total)
+          -----END OPENSSH PRIVATE KEY-----
+        script: echo "✅ SSH connection established"
+
