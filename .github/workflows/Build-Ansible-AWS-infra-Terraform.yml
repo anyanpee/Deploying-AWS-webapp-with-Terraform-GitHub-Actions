@@ -48,10 +48,8 @@ jobs:
       id: get_ip
       run: |
         # pull a single value, silently; fall back if -raw is blocked by "sensitive"
-        IP=$(terraform -chdir=$TF_WORK_DIR output -raw bastion_public_ip 2>/dev/null \
-            || terraform -chdir=$TF_WORK_DIR output bastion_public_ip | tr -d '"')
+        IP=$(terraform -chdir=$TF_WORK_DIR output bastion_public_ip | tr -d '"')
         # keep ONLY digits, dots and colons
-        IP=$(echo "$IP" | tr -cd '0-9.:')
         echo "EC2_PRIVATE_IP=$IP" >> "$GITHUB_ENV"
         echo "Extracted IP = $IP"
        
