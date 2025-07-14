@@ -6,8 +6,8 @@ resource "aws_key_pair" "deployer" {
   public_key = file("${path.module}/devops_key_pair.pub")
 }
 
-# ssh-keygen # name = ssh_key_aws
-# chmod 400 ssh_key_aws
-# cat ssh_key_aws >> GitHub Secrets EC2_PRIVATE_SSH_KEY
-# cat ssh_key_aws.pub >> GitHub Secrets EC2_PUBLIC_SSH_KEY
+# ssh-keygen # name = oregon-keypair
+# chmod 400 oregon-keypair
+# cat oregon-keypair >> GitHub Secrets EC2_PRIVATE_SSH_KEY
+# cat oregon-keypair.pub >> GitHub Secrets EC2_PUBLIC_SSH_KEY
 
