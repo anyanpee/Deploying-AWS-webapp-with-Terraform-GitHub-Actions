@@ -2,7 +2,7 @@
 
 
 resource "aws_key_pair" "deployer" {
-  key_name   = "devops_key_pair"
+  key_name   = "oregon-keypair"
   public_key = file("${path.module}/devops_key_pair.pub")
 }
 
