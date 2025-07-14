@@ -47,7 +47,7 @@ jobs:
     - name: Extract EC2 IP for SSH
       id: get_ip
       run: |
-        IP='"44.243.26.51"'
+        IP='"18.236.109.6"'
         IP=${IP//\"/}
         echo "IP: $IP"
         echo "EC2_PRIVATE_IP=$IP" >> $GITHUB_ENV
