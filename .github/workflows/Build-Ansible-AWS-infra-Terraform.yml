@@ -46,7 +46,11 @@ jobs:
 
     - name: Extract EC2 IP for SSH
       id: get_ip
-      run: echo "EC2_PRIVATE_IP=$(terraform -chdir=$TF_WORK_DIR output bastion_public_ip)" >> $GITHUB_ENV
+      run: |
+        IP=$(terraform -chdir=$TF_WORK_DIR output bastion_public_ip)
+        IP=${IP//\"/}
+        echo "IP: $IP"
+        echo "EC2_PRIVATE_IP=$IP" >> $GITHUB_ENV
            
     - name: Login to Amazon ECR
       id: login-ecr
