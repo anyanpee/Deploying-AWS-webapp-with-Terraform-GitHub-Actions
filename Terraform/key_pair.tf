@@ -1,9 +1,8 @@
 #----------------Create ssh key using ssh-keygen command---------------------------
 
 
-resource "aws_key_pair" "deployer" {
-  key_name   = "oregon-keypair"
-  public_key = file("${path.module}/devops_key_pair.pub")
+data "aws_key_pair" "deployer" {
+  key_name = "oregon-keypair"
 }
 
 # ssh-keygen # name = oregon-keypair
