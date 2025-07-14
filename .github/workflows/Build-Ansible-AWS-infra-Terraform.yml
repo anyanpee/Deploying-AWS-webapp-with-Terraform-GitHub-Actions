@@ -48,10 +48,10 @@ jobs:
       id: get_ip
       run: |
         # pull a single value, silently; fall back if -raw is blocked by "sensitive"
-        IP=$(terraform -chdir=$TF_WORK_DIR output bastion_public_ip | tr -d '"')
-        # keep ONLY digits, dots and colons
-        echo "EC2_PRIVATE_IP=$IP" >> "$GITHUB_ENV"
-        echo "Extracted IP = $IP"
+        IP=$(terraform -chdir=$TF_WORK_DIR output bastion_public_ip | tr -d '"'
+        CLEAN_IP=$(echo "$IP" | grep -oE '[0-9.]+')
+        echo "EC2_PRIVATE_IP=$CLEAN_IP" >> $GITHUB_ENV
+        echo "Extracted IP = $CLEAN_IP"
        
     - name: Login to Amazon ECR
       id: login-ecr
