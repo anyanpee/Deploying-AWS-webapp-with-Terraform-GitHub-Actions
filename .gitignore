@@ -1,3 +1,4 @@
 .vscode
 Terraform/.terraform/
 Terraform/.terraform.lock.hcl
+Terraform/ssh_key_aws*
