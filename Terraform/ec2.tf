@@ -3,7 +3,7 @@ resource "aws_instance" "bastion_instance_1" {
   instance_type               = var.ec2_instance_type
   availability_zone           = "${var.region}a"
   vpc_security_group_ids      = [aws_security_group.BastionSG.id] ##########
-  key_name                    = "oregon-keypair"
+  key_name                    = "key_name = data.aws_key_pair.deployer.key_name"
   subnet_id                   = module.network.public_subnet_1_id
   associate_public_ip_address = true
   tags = {
@@ -38,7 +38,7 @@ resource "aws_instance" "application_instance_1" {
   instance_type          = var.ec2_instance_type
   availability_zone      = "${var.region}a"
   vpc_security_group_ids = [aws_security_group.InstanceSG.id] #########
-  key_name               = "oregon-keypair"
+  key_name               = "key_name = data.aws_key_pair.deployer.key_name"
   subnet_id              = module.network.private_app_subnet_1_id
   tags = {
     Name = "application_instance_1"
@@ -63,7 +63,7 @@ resource "aws_instance" "application_instance_2" {
   instance_type          = var.ec2_instance_type
   availability_zone      = "${var.region}b"
   vpc_security_group_ids = [aws_security_group.InstanceSG.id] ###########
-  key_name               = "oregon-keypair"
+  key_name               = "key_name = data.aws_key_pair.deployer.key_name"
   subnet_id              = module.network.private_app_subnet_2_id
   tags = {
     Name = "application_instance_2"
