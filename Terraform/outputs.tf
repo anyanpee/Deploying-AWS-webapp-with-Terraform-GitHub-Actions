@@ -15,4 +15,3 @@ output "application_private_ip_2" {
   value = aws_instance.application_instance_2.private_ip
  
 }
-
