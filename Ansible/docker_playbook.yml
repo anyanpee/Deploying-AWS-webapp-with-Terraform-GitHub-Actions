@@ -1,19 +1,23 @@
-- name: Login to Amazon ECR Public
-  command: docker login --username AWS --password-stdin public.ecr.aws
-  args:
-    stdin: "{{ lookup('pipe', 'aws ecr-public get-login-password --region us-east-1') }}"
-  register: ecr_login_result
-  changed_when: false
-  ignore_errors: true
+- name: Deploy Dockerized Flask App from ECR
+  hosts: proxy
+  become: true
+  tasks:
 
-- name: Stop and Remove Existing Container (if running)
-  shell: |
-    docker stop ECR-Container || true
-    docker rm ECR-Container || true
-  ignore_errors: true
+    - name: Login to Amazon ECR Public
+      shell: |
+        aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin public.ecr.aws
+      register: ecr_login_result
+      changed_when: false
+      ignore_errors: true
 
-- name: Pull Latest Docker Image from Public ECR
-  command: docker pull public.ecr.aws/g4x4w1s3/monty-hall-game:latest
+    - name: Stop and Remove Existing Container (if running)
+      shell: |
+        docker stop ECR-Container || true
+        docker rm ECR-Container || true
+      ignore_errors: true
 
-- name: Run Docker Container with Latest Image
-  command: docker run -d --name ECR-Container -p 80:80 public.ecr.aws/g4x4w1s3/monty-hall-game:latest
+    - name: Pull Latest Docker Image from Public ECR
+      command: docker pull public.ecr.aws/g4x4w1s3/monty-hall-game:latest
+
+    - name: Run Docker Container with Latest Image
+      command: docker run -d --name ECR-Container -p 80:80 public.ecr.aws/g4x4w1s3/monty-hall-game:latest
