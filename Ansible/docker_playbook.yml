@@ -1,11 +1,13 @@
 - name: Deploy Dockerized Flask App from ECR
   hosts: proxy
   become: true
+  become_method: sudo
+  become_user: root
   tasks:
 
-    - name: Login to Amazon ECR Public
+    - name: Login to Amazon ECR (Private)
       shell: |
-        aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin public.ecr.aws
+        aws ecr get-login-password --region us-west-2 | docker login --username AWS --password-stdin 257394496890.dkr.ecr.us-west-2.amazonaws.com
       register: ecr_login_result
       changed_when: false
       ignore_errors: true
@@ -16,8 +18,8 @@
         docker rm ECR-Container || true
       ignore_errors: true
 
-    - name: Pull Latest Docker Image from Public ECR
-      command: docker pull public.ecr.aws/g4x4w1s3/monty-hall-game:latest
+    - name: Pull Docker Image from Private ECR
+      command: docker pull 257394496890.dkr.ecr.us-west-2.amazonaws.com/my-app:latest
 
     - name: Run Docker Container with Latest Image
-      command: docker run -d --name ECR-Container -p 80:80 public.ecr.aws/g4x4w1s3/monty-hall-game:latest
+      command: docker run -d --name ECR-Container -p 80:80 257394496890.dkr.ecr.us-west-2.amazonaws.com/my-app:latest
