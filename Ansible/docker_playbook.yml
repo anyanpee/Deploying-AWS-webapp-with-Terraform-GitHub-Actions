@@ -39,12 +39,13 @@
 
     - name: Pull Docker Image from Private ECR
       command: docker pull 257394496890.dkr.ecr.us-west-2.amazonaws.com/my-app:latest
-        
-    - name: Stop Apache service to free port 80
-      systemd:
-        name: httpd
-        state: stopped
-        enabled: false
+
+    - name: Stop and remove any container using port 80
+      shell: |
+        CONTAINER_ID=$(docker ps --filter "publish=80" --format "{{.ID}}")
+        if [ ! -z "$CONTAINER_ID" ]; then
+          docker stop $CONTAINER_ID && docker rm $CONTAINER_ID
+        fi
       ignore_errors: true
 
     - name: Run Docker Container with Latest Image
