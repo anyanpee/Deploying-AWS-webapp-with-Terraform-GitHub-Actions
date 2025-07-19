@@ -2,12 +2,31 @@
   hosts: proxy
   become: true
   become_method: sudo
-  become_user: root
   tasks:
+
+    - name: Install Docker
+      yum:
+        name: docker
+        state: present
+
+    - name: Start and Enable Docker
+      service:
+        name: docker
+        state: started
+        enabled: true
+
+    - name: Add ec2-user to Docker group
+      user:
+        name: ec2-user
+        groups: docker
+        append: yes
 
     - name: Login to Amazon ECR (Private)
       shell: |
         aws ecr get-login-password --region us-west-2 | docker login --username AWS --password-stdin 257394496890.dkr.ecr.us-west-2.amazonaws.com
+      environment:
+        AWS_ACCESS_KEY_ID: "{{ lookup('env', 'AWS_ACCESS_KEY_ID') }}"
+        AWS_SECRET_ACCESS_KEY: "{{ lookup('env', 'AWS_SECRET_ACCESS_KEY') }}"
       register: ecr_login_result
       changed_when: false
       ignore_errors: true
