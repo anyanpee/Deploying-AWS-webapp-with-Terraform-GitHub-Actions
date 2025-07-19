@@ -42,10 +42,10 @@
 
     - name: Stop and remove any container using port 80
       shell: |
-        CONTAINER_ID=$(docker ps --filter "publish=80" --format "{{.ID}}")
-        if [ ! -z "$CONTAINER_ID" ]; then
-          docker stop $CONTAINER_ID && docker rm $CONTAINER_ID
-        fi
+       PORT80_CONTAINER=$(docker ps -q --filter "publish=80")
+       if [ ! -z "$PORT80_CONTAINER" ]; then
+         docker stop $PORT80_CONTAINER && docker rm $PORT80_CONTAINER
+       fi
       ignore_errors: true
 
     - name: Run Docker Container with Latest Image
